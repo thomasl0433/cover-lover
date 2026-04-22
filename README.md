@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cover Lover
+
+A collaborative setlist voting app for bands. Create a band, invite bandmates via a shareable link, add cover songs to the pool, and vote on what to play.
+
+## Features
+
+- **Band creation** with a shareable invite link
+- **No login required** — just enter a display name when joining
+- **Last.fm-powered song search** — search for any track by name or artist
+- **Genre-based color coding** — song cards are color-themed based on Last.fm tags (metal = red, pop = pink, jazz = blue, etc.)
+- **Live ranked voting** — songs sorted by votes in real time
+- **Song metadata** — album art, duration, genre tags pulled from Last.fm
 
 ## Getting Started
 
-First, run the development server:
+### 1. Set up environment variables
 
-```bash
+Edit `.env.local` with your values:
+
+\`\`\`
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
+LASTFM_API_KEY="your_key_here"
+\`\`\`
+
+**Last.fm API key:** Free at https://www.last.fm/api/account/create  
+**Database:** Use [Neon](https://neon.tech) (free tier, Vercel-native) or any PostgreSQL provider.
+
+### 2. Run database migration
+
+\`\`\`bash
+npm run db:push   # quick push (dev)
+# or
+npm run db:migrate  # tracked migration
+\`\`\`
+
+### 3. Start dev server
+
+\`\`\`bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy to Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Push to GitHub
+2. Import in Vercel dashboard
+3. Add env vars: \`DATABASE_URL\`, \`LASTFM_API_KEY\`
+4. Deploy — Vercel runs \`prisma generate && next build\` automatically via vercel.json
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech Stack
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Next.js 14** (App Router) + **TypeScript**
+- **Prisma 7** + **PostgreSQL** (pg adapter)
+- **Last.fm API** for music search & genre tags
+- **Tailwind CSS** + **Radix UI** + **Lucide** icons
+- **localStorage** for sessionless identity (no auth required)

@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Band {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  members   Member[]
+  songs     Song[]
+}
+
+model Member {
+  id          String   @id @default(cuid())
+  bandId      String
+  displayName String
+  sessionId   String   @unique
+  joinedAt    DateTime @default(now())
+  band        Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  addedSongs  Song[]
+  votes       Vote[]
+
+  @@unique([bandId, displayName])
+}
+
+model Song {
+  id        String   @id @default(cuid())
+  bandId    String
+  title     String
+  artist    String
+  lastfmUrl String?
+  imageUrl  String?
+  tags      Json     @default("[]")
+  duration  Int?
+  addedById String
+  addedAt   DateTime @default(now())
+  band      Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  addedBy   Member   @relation(fields: [addedById], references: [id])
+  votes     Vote[]
+}
+
+model Vote {
+  id       String @id @default(cuid())
+  songId   String
+  memberId String
+  song     Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([songId, memberId])
+}
