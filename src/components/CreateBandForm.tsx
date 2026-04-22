@@ -2,19 +2,40 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Music2 } from "lucide-react";
+import { Music2, User, LogIn } from "lucide-react";
 
 export default function CreateBandForm() {
     const router = useRouter();
+    const { user, isLoaded } = useUser();
     const [name, setName] = useState("");
+    const [displayName, setDisplayName] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Not yet loaded
+    if (!isLoaded) return null;
+
+    // Not signed in
+    if (!user) {
+        return (
+            <div className="flex flex-col items-center gap-4 text-center">
+                <p className="text-muted text-sm">Sign in to create your band</p>
+                <SignInButton mode="modal">
+                    <Button size="lg" className="w-full gap-2">
+                        <LogIn className="h-4 w-4" />
+                        Sign in to get started
+                    </Button>
+                </SignInButton>
+            </div>
+        );
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        if (!name.trim()) return;
+        if (!name.trim() || !displayName.trim()) return;
         setLoading(true);
         setError(null);
 
@@ -22,15 +43,14 @@ export default function CreateBandForm() {
             const res = await fetch("/api/bands", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ name, displayName }),
             });
             const data = await res.json();
             if (!res.ok) {
                 setError(data.error ?? "Failed to create band");
                 return;
             }
-            // Redirect to join page so creator can set their display name
-            router.push(`/join/${data.band.slug}?creator=1`);
+            router.push(`/band/${data.band.slug}`);
         } catch {
             setError("Network error — please try again");
         } finally {
@@ -57,10 +77,32 @@ export default function CreateBandForm() {
                     />
                 </div>
             </div>
+            <div className="flex flex-col gap-1.5">
+                <label htmlFor="your-name" className="text-sm text-muted">
+                    Your name in the band
+                </label>
+                <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-2" />
+                    <Input
+                        id="your-name"
+                        className="pl-9"
+                        placeholder="e.g. Alex"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        maxLength={40}
+                        required
+                    />
+                </div>
+            </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
-            <Button type="submit" disabled={loading || !name.trim()} size="lg">
+            <Button
+                type="submit"
+                disabled={loading || !name.trim() || !displayName.trim()}
+                size="lg"
+            >
                 {loading ? "Creating…" : "Create Band"}
             </Button>
         </form>
     );
 }
+

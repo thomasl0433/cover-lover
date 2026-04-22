@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 interface Params {
     params: Promise<{ songId: string }>;
 }
 
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(_req: NextRequest, { params }: Params) {
     const { songId } = await params;
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
-        const { sessionId } = await req.json();
-
-        if (!sessionId) {
-            return NextResponse.json({ error: "sessionId required" }, { status: 401 });
-        }
-
         const song = await prisma.song.findUnique({ where: { id: songId } });
         if (!song) {
             return NextResponse.json({ error: "Song not found" }, { status: 404 });
         }
 
-        const member = await prisma.member.findFirst({
-            where: { sessionId, bandId: song.bandId },
+        const member = await prisma.member.findUnique({
+            where: { bandId_clerkId: { bandId: song.bandId, clerkId: userId } },
         });
         if (!member) {
             return NextResponse.json({ error: "Not a band member" }, { status: 403 });
@@ -41,21 +38,18 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(_req: NextRequest, { params }: Params) {
     const { songId } = await params;
-    const sessionId = req.nextUrl.searchParams.get("sessionId");
-
-    if (!sessionId) {
-        return NextResponse.json({ error: "sessionId required" }, { status: 401 });
-    }
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const song = await prisma.song.findUnique({ where: { id: songId } });
     if (!song) {
         return NextResponse.json({ error: "Song not found" }, { status: 404 });
     }
 
-    const member = await prisma.member.findFirst({
-        where: { sessionId, bandId: song.bandId },
+    const member = await prisma.member.findUnique({
+        where: { bandId_clerkId: { bandId: song.bandId, clerkId: userId } },
     });
     if (!member) {
         return NextResponse.json({ error: "Not a band member" }, { status: 403 });
@@ -68,3 +62,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const voteCount = await prisma.vote.count({ where: { songId } });
     return NextResponse.json({ voteCount });
 }
+

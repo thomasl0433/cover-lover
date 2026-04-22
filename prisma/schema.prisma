@@ -11,25 +11,39 @@ datasource db {
 }
 
 model Band {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  members   Member[]
-  songs     Song[]
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  createdAt    DateTime      @default(now())
+  members      Member[]
+  songs        Song[]
+  joinRequests JoinRequest[]
 }
 
 model Member {
   id          String   @id @default(cuid())
   bandId      String
   displayName String
-  sessionId   String   @unique
+  clerkId     String
   joinedAt    DateTime @default(now())
   band        Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
   addedSongs  Song[]
   votes       Vote[]
 
+  @@unique([bandId, clerkId])
   @@unique([bandId, displayName])
+}
+
+model JoinRequest {
+  id          String   @id @default(cuid())
+  bandId      String
+  clerkId     String
+  displayName String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  band        Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@unique([bandId, clerkId])
 }
 
 model Song {
@@ -41,10 +55,10 @@ model Song {
   imageUrl  String?
   tags      Json     @default("[]")
   duration  Int?
-  addedById String
+  addedById String?
   addedAt   DateTime @default(now())
   band      Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
-  addedBy   Member   @relation(fields: [addedById], references: [id])
+  addedBy   Member?  @relation(fields: [addedById], references: [id], onDelete: SetNull)
   votes     Vote[]
 }
 

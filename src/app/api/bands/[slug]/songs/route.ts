@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { findBestTrack } from "@/lib/lastfm";
 
@@ -8,13 +9,15 @@ interface Params {
 
 export async function POST(req: NextRequest, { params }: Params) {
     const { slug } = await params;
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
-        const { title, artist, sessionId } = await req.json();
+        const { title, artist } = await req.json();
 
-        if (!title || !artist || !sessionId) {
+        if (!title || !artist) {
             return NextResponse.json(
-                { error: "title, artist, and sessionId are required" },
+                { error: "title and artist are required" },
                 { status: 400 }
             );
         }
@@ -24,8 +27,8 @@ export async function POST(req: NextRequest, { params }: Params) {
             return NextResponse.json({ error: "Band not found" }, { status: 404 });
         }
 
-        const member = await prisma.member.findFirst({
-            where: { sessionId, bandId: band.id },
+        const member = await prisma.member.findUnique({
+            where: { bandId_clerkId: { bandId: band.id, clerkId: userId } },
         });
         if (!member) {
             return NextResponse.json(
@@ -80,3 +83,4 @@ export async function POST(req: NextRequest, { params }: Params) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+

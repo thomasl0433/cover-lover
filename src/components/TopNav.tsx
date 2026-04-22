@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useUser, UserButton } from "@clerk/nextjs";
 import { Music4, ChevronDown } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -15,24 +16,21 @@ interface BandEntry {
 export default function TopNav() {
     const params = useParams<{ slug?: string }>();
     const slug = params?.slug;
+    const { user, isLoaded } = useUser();
     const [bands, setBands] = useState<BandEntry[]>([]);
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const found: BandEntry[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith("cl_name_")) {
-                const s = key.replace("cl_name_", "");
-                const name = localStorage.getItem(key);
-                if (name) found.push({ name, slug: s });
-            }
+        if (!user) {
+            setBands([]);
+            return;
         }
-        found.sort((a, b) => (a.slug === slug ? -1 : b.slug === slug ? 1 : 0));
-        setBands(found);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        fetch("/api/me/bands")
+            .then((r) => r.json())
+            .then((d) => setBands(d.bands ?? []))
+            .catch(() => { });
+    }, [user]);
 
     useEffect(() => {
         function onOutside(e: MouseEvent) {
@@ -61,7 +59,7 @@ export default function TopNav() {
                 <div className="flex items-center gap-2">
                     <ThemeToggle />
 
-                    {bands.length === 1 && (
+                    {isLoaded && bands.length === 1 && (
                         <Link
                             href={`/band/${bands[0].slug}`}
                             className="flex items-center gap-2 rounded-full border border-border-base bg-surface px-3 py-1.5 text-sm hover:bg-surface-2 transition-colors"
@@ -73,7 +71,7 @@ export default function TopNav() {
                         </Link>
                     )}
 
-                    {bands.length > 1 && (
+                    {isLoaded && bands.length > 1 && displayBand && (
                         <div className="relative" ref={ref}>
                             <button
                                 onClick={() => setOpen((o) => !o)}
@@ -111,9 +109,12 @@ export default function TopNav() {
                             )}
                         </div>
                     )}
+
+                    {isLoaded && user && (
+                        <UserButton />
+                    )}
                 </div>
             </div>
         </header>
     );
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Link2, Users, RefreshCw, CheckSquare, Trash2 } from "lucide-react";
+import { Link2, Users, RefreshCw, CheckSquare, Trash2, Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SongSearch from "@/components/SongSearch";
 import SongCard from "@/components/SongCard";
@@ -20,7 +20,7 @@ interface Song {
     imageUrl: string | null;
     tags: unknown;
     duration: number | null;
-    addedBy: { id: string; displayName: string };
+    addedBy: { id: string; displayName: string } | null;
     votes: Array<{ memberId: string }>;
 }
 
@@ -32,38 +32,59 @@ interface Band {
     songs: Song[];
 }
 
-interface Props {
-    slug: string;
-    sessionId: string;
-    memberId: string;
-    memberName: string;
+interface CurrentMember {
+    id: string;
+    displayName: string;
 }
 
-export default function BandDashboard({
-    slug,
-    sessionId,
-    memberId,
-    memberName,
-}: Props) {
+interface JoinRequest {
+    id: string;
+    displayName: string;
+    createdAt: string;
+}
+
+interface Props {
+    slug: string;
+}
+
+export default function BandDashboard({ slug }: Props) {
     const [band, setBand] = useState<Band | null>(null);
+    const [currentMember, setCurrentMember] = useState<CurrentMember | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [requests, setRequests] = useState<JoinRequest[]>([]);
+    const [showRequests, setShowRequests] = useState(false);
 
     const fetchBand = useCallback(async () => {
         try {
             const res = await fetch(`/api/bands/${slug}`);
             const data = await res.json();
-            if (res.ok) setBand(data.band);
+            if (res.ok) {
+                setBand(data.band);
+                setCurrentMember(data.currentMember);
+            }
         } finally {
             setLoading(false);
+        }
+    }, [slug]);
+
+    const fetchRequests = useCallback(async () => {
+        const res = await fetch(`/api/bands/${slug}/requests`);
+        if (res.ok) {
+            const data = await res.json();
+            setRequests(data.requests ?? []);
         }
     }, [slug]);
 
     useEffect(() => {
         fetchBand();
     }, [fetchBand]);
+
+    useEffect(() => {
+        if (currentMember) fetchRequests();
+    }, [currentMember, fetchRequests]);
 
     function copyInviteLink() {
         const url = `${window.location.origin}/join/${slug}`;
@@ -87,12 +108,19 @@ export default function BandDashboard({
 
     async function deleteSelected() {
         for (const id of selectedIds) {
-            await fetch(
-                `/api/bands/${slug}/songs/${id}?sessionId=${encodeURIComponent(sessionId)}`,
-                { method: "DELETE" }
-            );
+            await fetch(`/api/bands/${slug}/songs/${id}`, { method: "DELETE" });
         }
         exitSelectMode();
+        fetchBand();
+    }
+
+    async function resolveRequest(requestId: string, action: "approve" | "reject") {
+        await fetch(`/api/bands/${slug}/requests/${requestId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action }),
+        });
+        fetchRequests();
         fetchBand();
     }
 
@@ -109,7 +137,7 @@ export default function BandDashboard({
         );
     }
 
-    if (!band) {
+    if (!band || !currentMember) {
         return <p className="text-red-400 text-center py-10">Band not found.</p>;
     }
 
@@ -120,10 +148,24 @@ export default function BandDashboard({
                 <div>
                     <h1 className="text-3xl font-black text-foreground">{band.name}</h1>
                     <p className="text-muted text-sm mt-0.5">
-                        Voting as <span className="text-violet-500">{memberName}</span>
+                        Voting as <span className="text-violet-500">{currentMember.displayName}</span>
                     </p>
                 </div>
                 <div className="flex gap-2 flex-wrap items-center">
+                    {requests.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowRequests((v) => !v)}
+                            className="relative"
+                        >
+                            <Bell className="h-4 w-4" />
+                            Requests
+                            <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-violet-500 text-white text-[10px] flex items-center justify-center font-bold">
+                                {requests.length}
+                            </span>
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={copyInviteLink}>
                         <Link2 className="h-4 w-4" />
                         {copied ? "Copied!" : "Invite Link"}
@@ -135,17 +177,46 @@ export default function BandDashboard({
                 </div>
             </div>
 
+            {/* Join requests panel */}
+            {showRequests && requests.length > 0 && (
+                <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4 flex flex-col gap-3">
+                    <p className="text-sm font-semibold text-violet-500">Pending join requests</p>
+                    {requests.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between gap-3">
+                            <span className="text-sm text-foreground font-medium">{r.displayName}</span>
+                            <div className="flex gap-1.5">
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() => resolveRequest(r.id, "approve")}
+                                >
+                                    <Check className="h-3.5 w-3.5" />
+                                    Approve
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => resolveRequest(r.id, "reject")}
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                    Reject
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* Members */}
             <div className="flex items-center gap-2 flex-wrap">
                 <Users className="h-4 w-4 text-muted-2 shrink-0" />
                 {band.members.map((m) => (
                     <span
                         key={m.id}
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                            m.id === memberId
-                                ? "bg-violet-600 text-white"
-                                : "bg-surface-2 text-muted border border-border-base"
-                        }`}
+                        className={`text-xs px-2 py-0.5 rounded-full ${m.id === currentMember.id
+                            ? "bg-violet-600 text-white"
+                            : "bg-surface-2 text-muted border border-border-base"
+                            }`}
                     >
                         {m.displayName}
                     </span>
@@ -157,15 +228,11 @@ export default function BandDashboard({
                 <h2 className="text-sm font-semibold text-muted mb-3">
                     Add a song to the pool
                 </h2>
-                <SongSearch
-                    slug={slug}
-                    sessionId={sessionId}
-                    onSongAdded={fetchBand}
-                />
+                <SongSearch slug={slug} onSongAdded={fetchBand} />
             </div>
 
             {/* Bulk upload */}
-            <BulkUpload slug={slug} sessionId={sessionId} onSongsAdded={fetchBand} />
+            <BulkUpload slug={slug} onSongsAdded={fetchBand} />
 
             {/* Song list */}
             <div>
@@ -208,8 +275,7 @@ export default function BandDashboard({
                                 key={song.id}
                                 song={{ ...song, tags: song.tags as string[] }}
                                 rank={i + 1}
-                                memberId={memberId}
-                                sessionId={sessionId}
+                                memberId={currentMember.id}
                                 slug={slug}
                                 onVoteChange={fetchBand}
                                 onDelete={fetchBand}
@@ -224,3 +290,4 @@ export default function BandDashboard({
         </div>
     );
 }
+

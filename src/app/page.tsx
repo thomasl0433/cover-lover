@@ -12,7 +12,7 @@ export default function Home() {
         <section className="flex flex-col items-center text-center px-4 pt-24 pb-20">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-500 text-xs font-semibold tracking-widest uppercase px-3 py-1.5 rounded-full border border-violet-500/20 mb-6">
             <Sparkles className="h-3.5 w-3.5" />
-            Free &amp; no account required
+            Free for your band
           </div>
           <h1 className="text-5xl sm:text-6xl font-black text-foreground mb-5 leading-tight max-w-2xl">
             Vote on your band&apos;s
@@ -23,7 +23,7 @@ export default function Home() {
           </h1>
           <p className="text-muted text-lg max-w-lg mx-auto mb-10">
             Create a shared pool of songs, invite your bandmates via a link,
-            and let everyone vote on what makes the setlist — no login needed.
+            and let everyone vote on what makes the setlist.
           </p>
 
           {/* CTA form */}
@@ -92,7 +92,7 @@ export default function Home() {
             </h2>
             <div className="grid sm:grid-cols-2 gap-6">
               {([
-                { icon: Users, color: "text-violet-500", title: "Invite via link", desc: "No accounts, no app installs. Share a URL and your bandmates are in." },
+                { icon: Users, color: "text-violet-500", title: "Invite via link", desc: "Share an invite link and your bandmates can request to join. Approve them in one click." },
                 { icon: Search, color: "text-pink-500", title: "Last.fm powered search", desc: "Thousands of tracks with album art, duration, and genre tags pulled in automatically." },
                 { icon: Music4, color: "text-amber-500", title: "Bulk paste from a spreadsheet", desc: "Got an existing setlist in Google Sheets? Copy the columns and paste them in one go." },
                 { icon: ThumbsUp, color: "text-emerald-500", title: "Live ranked voting", desc: "The list re-orders in real time as votes come in. Hit Refresh to sync." },

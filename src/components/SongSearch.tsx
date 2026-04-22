@@ -8,11 +8,10 @@ import type { LastFmTrack } from "@/lib/lastfm";
 
 interface Props {
     slug: string;
-    sessionId: string;
     onSongAdded: () => void;
 }
 
-export default function SongSearch({ slug, sessionId, onSongAdded }: Props) {
+export default function SongSearch({ slug, onSongAdded }: Props) {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<LastFmTrack[]>([]);
     const [searching, setSearching] = useState(false);
@@ -56,7 +55,6 @@ export default function SongSearch({ slug, sessionId, onSongAdded }: Props) {
                 body: JSON.stringify({
                     title: track.name,
                     artist: track.artist,
-                    sessionId,
                 }),
             });
             const data = await res.json();

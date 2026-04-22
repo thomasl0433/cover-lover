@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 
 interface Props {
     slug: string;
-    sessionId: string;
     onSongsAdded: () => void;
 }
 
@@ -79,7 +78,7 @@ function parseText(text: string): ParsedLine[] {
         });
 }
 
-export default function BulkUpload({ slug, sessionId, onSongsAdded }: Props) {
+export default function BulkUpload({ slug, onSongsAdded }: Props) {
     const [open, setOpen] = useState(false);
     const [text, setText] = useState("");
     const [items, setItems] = useState<BulkItem[] | null>(null);
@@ -109,7 +108,6 @@ export default function BulkUpload({ slug, sessionId, onSongsAdded }: Props) {
             body: JSON.stringify({
                 title: item.title,
                 artist: item.artist || item.title,
-                sessionId,
             }),
         });
         if (res.status === 409) return "duplicate";

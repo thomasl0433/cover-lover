@@ -14,7 +14,7 @@ interface Song {
     imageUrl: string | null;
     tags: string[];
     duration: number | null;
-    addedBy: { id: string; displayName: string };
+    addedBy: { id: string; displayName: string } | null;
     votes: Array<{ memberId: string }>;
 }
 
@@ -22,7 +22,6 @@ interface Props {
     song: Song;
     rank: number;
     memberId: string;
-    sessionId: string;
     slug: string;
     onVoteChange: () => void;
     onDelete: () => void;
@@ -35,7 +34,6 @@ export default function SongCard({
     song,
     rank,
     memberId,
-    sessionId,
     slug,
     onVoteChange,
     onDelete,
@@ -48,26 +46,14 @@ export default function SongCard({
 
     const hasVoted = song.votes.some((v) => v.memberId === memberId);
     const voteCount = song.votes.length;
-    const isOwner = song.addedBy.id === memberId;
+    const isOwner = song.addedBy?.id === memberId;
     const theme = getSongColorTheme(song.tags as string[]);
 
     async function toggleVote() {
         setLoadingVote(true);
         try {
             const method = hasVoted ? "DELETE" : "POST";
-            const url = hasVoted
-                ? `/api/songs/${song.id}/vote?sessionId=${encodeURIComponent(sessionId)}`
-                : `/api/songs/${song.id}/vote`;
-
-            await fetch(url, {
-                method,
-                ...(method === "POST"
-                    ? {
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ sessionId }),
-                    }
-                    : {}),
-            });
+            await fetch(`/api/songs/${song.id}/vote`, { method });
             onVoteChange();
         } finally {
             setLoadingVote(false);
@@ -77,10 +63,7 @@ export default function SongCard({
     async function deleteSong() {
         setLoadingDelete(true);
         try {
-            await fetch(
-                `/api/bands/${slug}/songs/${song.id}?sessionId=${encodeURIComponent(sessionId)}`,
-                { method: "DELETE" }
-            );
+            await fetch(`/api/bands/${slug}/songs/${song.id}`, { method: "DELETE" });
             onDelete();
         } finally {
             setLoadingDelete(false);
@@ -179,28 +162,28 @@ export default function SongCard({
                 </div>
 
                 <p className="text-xs text-muted-2 mt-1">
-                    Added by {song.addedBy.displayName}
+                    Added by {song.addedBy?.displayName ?? "Unknown"}
                 </p>
             </div>
 
             {/* Vote */}
             {!selectMode && (
-            <div className="flex flex-col items-center gap-1 shrink-0">
-                <Button
-                    variant={hasVoted ? "success" : "outline"}
-                    size="icon"
-                    onClick={toggleVote}
-                    disabled={loadingVote}
-                    className={cn(
-                        "h-10 w-10 rounded-full transition-all",
-                        hasVoted && "scale-110"
-                    )}
-                    title={hasVoted ? "Remove vote" : "Vote for this song"}
-                >
-                    <ThumbsUp className="h-4 w-4" />
-                </Button>
-                <span className="text-xs font-bold text-foreground">{voteCount}</span>
-            </div>
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                    <Button
+                        variant={hasVoted ? "success" : "outline"}
+                        size="icon"
+                        onClick={toggleVote}
+                        disabled={loadingVote}
+                        className={cn(
+                            "h-10 w-10 rounded-full transition-all",
+                            hasVoted && "scale-110"
+                        )}
+                        title={hasVoted ? "Remove vote" : "Vote for this song"}
+                    >
+                        <ThumbsUp className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs font-bold text-foreground">{voteCount}</span>
+                </div>
             )}
 
             {/* Delete (owner only, not in select mode) */}
