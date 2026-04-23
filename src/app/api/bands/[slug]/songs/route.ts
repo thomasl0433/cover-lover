@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { findBestTrack } from "@/lib/lastfm";
+import { findSpotifyTrack, isSpotifyConfigured } from "@/lib/spotify";
+import { getArtistGenres } from "@/lib/musicbrainz";
 
 interface Params {
     params: Promise<{ slug: string }>;
@@ -13,7 +15,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
-        const { title, artist } = await req.json();
+        const body = await req.json();
+        const { title, artist, spotifyUri: providedSpotifyUri } = body as {
+            title: string;
+            artist: string;
+            spotifyUri?: string;
+        };
 
         if (!title || !artist) {
             return NextResponse.json(
@@ -52,28 +59,92 @@ export async function POST(req: NextRequest, { params }: Params) {
             );
         }
 
-        // Enrich with Last.fm data
-        let enriched = null;
+        // Enrich with Spotify metadata (preferred) or Last.fm (fallback)
+        let enrichedTitle = title.trim();
+        let enrichedArtist = artist.trim();
+        let lastfmUrl: string | null = null;
+        let imageUrl: string | null = null;
+        let tags: string[] = [];
+        let duration: number | null = null;
+        let spotifyUri: string | null = providedSpotifyUri ?? null;
+
+        if (isSpotifyConfigured()) {
+            try {
+                const spotifyTrack = spotifyUri
+                    ? null // already have the URI from the search result
+                    : await findSpotifyTrack(title.trim(), artist.trim());
+                if (spotifyTrack) {
+                    enrichedTitle = spotifyTrack.title;
+                    enrichedArtist = spotifyTrack.artist;
+                    imageUrl = spotifyTrack.imageUrl;
+                    duration = spotifyTrack.duration;
+                    spotifyUri = spotifyTrack.spotifyUri;
+                }
+            } catch {
+                // Spotify errors are non-fatal
+            }
+        }
+
+        // Always try Last.fm for imageUrl/duration fallback
         try {
-            enriched = await findBestTrack(artist.trim(), title.trim());
+            const lastfm = await findBestTrack(
+                enrichedArtist || artist.trim(),
+                enrichedTitle || title.trim()
+            );
+            if (lastfm) {
+                lastfmUrl = lastfm.lastfmUrl;
+                if (!imageUrl) imageUrl = lastfm.imageUrl;
+                if (duration === null) duration = lastfm.duration;
+            }
         } catch {
-            // Last.fm errors are non-fatal; fall back to bare data
+            // Last.fm errors are non-fatal
+        }
+
+        // Tags: MusicBrainz artist genres (clean, curated) → Last.fm fallback
+        try {
+            const mbGenres = await getArtistGenres(enrichedArtist || artist.trim());
+            if (mbGenres.length > 0) {
+                tags = mbGenres;
+            } else {
+                // Fall back to Last.fm tags if MusicBrainz has none
+                const lastfm = await findBestTrack(
+                    enrichedArtist || artist.trim(),
+                    enrichedTitle || title.trim()
+                );
+                if (lastfm) tags = lastfm.tags;
+            }
+        } catch {
+            // Tag errors are non-fatal
         }
 
         const song = await prisma.song.create({
             data: {
                 bandId: band.id,
-                title: enriched?.title ?? title.trim(),
-                artist: enriched?.artist ?? artist.trim(),
-                lastfmUrl: enriched?.lastfmUrl ?? null,
-                imageUrl: enriched?.imageUrl ?? null,
-                tags: enriched?.tags ?? [],
-                duration: enriched?.duration ?? null,
+                title: enrichedTitle,
+                artist: enrichedArtist,
+                lastfmUrl,
+                imageUrl,
+                tags,
+                duration,
+                spotifyUri,
                 addedById: member.id,
             },
             include: {
                 addedBy: { select: { id: true, displayName: true } },
-                votes: { select: { memberId: true } },
+                votes: { select: { memberId: true, member: { select: { displayName: true } } } },
+            },
+        });
+
+        // Log activity
+        await prisma.activity.create({
+            data: {
+                bandId: band.id,
+                memberId: member.id,
+                memberName: member.displayName,
+                type: "SONG_ADDED",
+                songId: song.id,
+                songTitle: song.title,
+                songArtist: song.artist,
             },
         });
 

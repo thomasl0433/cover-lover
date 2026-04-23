@@ -30,6 +30,19 @@ export async function POST(_req: NextRequest, { params }: Params) {
             update: {},
         });
 
+        // Log activity (ignore if duplicate — upsert means vote already existed)
+        await prisma.activity.create({
+            data: {
+                bandId: song.bandId,
+                memberId: member.id,
+                memberName: member.displayName,
+                type: "VOTED",
+                songId: song.id,
+                songTitle: song.title,
+                songArtist: song.artist,
+            },
+        }).catch(() => { /* non-fatal */ });
+
         const voteCount = await prisma.vote.count({ where: { songId } });
         return NextResponse.json({ voteCount });
     } catch (err) {

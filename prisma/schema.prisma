@@ -11,13 +11,16 @@ datasource db {
 }
 
 model Band {
-  id           String        @id @default(cuid())
-  name         String
-  slug         String        @unique
-  createdAt    DateTime      @default(now())
-  members      Member[]
-  songs        Song[]
-  joinRequests JoinRequest[]
+  id                 String        @id @default(cuid())
+  name               String
+  slug               String        @unique
+  createdAt          DateTime      @default(now())
+  spotifyPlaylistId  String?
+  spotifyPlaylistUrl String?
+  members            Member[]
+  songs              Song[]
+  joinRequests       JoinRequest[]
+  activities         Activity[]
 }
 
 model Member {
@@ -47,19 +50,21 @@ model JoinRequest {
 }
 
 model Song {
-  id        String   @id @default(cuid())
-  bandId    String
-  title     String
-  artist    String
-  lastfmUrl String?
-  imageUrl  String?
-  tags      Json     @default("[]")
-  duration  Int?
-  addedById String?
-  addedAt   DateTime @default(now())
-  band      Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
-  addedBy   Member?  @relation(fields: [addedById], references: [id], onDelete: SetNull)
-  votes     Vote[]
+  id         String     @id @default(cuid())
+  bandId     String
+  title      String
+  artist     String
+  lastfmUrl  String?
+  imageUrl   String?
+  tags       Json       @default("[]")
+  duration   Int?
+  spotifyUri String?
+  addedById  String?
+  addedAt    DateTime   @default(now())
+  band       Band       @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  addedBy    Member?    @relation(fields: [addedById], references: [id], onDelete: SetNull)
+  votes      Vote[]
+  activities Activity[]
 }
 
 model Vote {
@@ -70,4 +75,18 @@ model Vote {
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([songId, memberId])
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  bandId     String
+  memberId   String?
+  memberName String
+  type       String // SONG_ADDED | SONG_REMOVED | VOTED
+  songId     String?
+  songTitle  String
+  songArtist String
+  createdAt  DateTime @default(now())
+  band       Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  song       Song?    @relation(fields: [songId], references: [id], onDelete: SetNull)
 }

@@ -35,6 +35,18 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
         );
     }
 
+    await prisma.activity.create({
+        data: {
+            bandId: band.id,
+            memberId: member.id,
+            memberName: member.displayName,
+            type: "SONG_REMOVED",
+            songId: song.id,
+            songTitle: song.title,
+            songArtist: song.artist,
+        },
+    });
+
     await prisma.song.delete({ where: { id: songId } });
     return NextResponse.json({ ok: true });
 }

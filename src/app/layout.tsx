@@ -9,6 +9,16 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Cover Lover — Band Setlist Voting",
   description: "Vote on covers for your band's next set",
+  openGraph: {
+    title: "Cover Lover — Band Setlist Voting",
+    description: "Vote on covers for your band's next set",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cover Lover — Band Setlist Voting",
+    description: "Vote on covers for your band's next set",
+  },
 };
 
 export default function RootLayout({

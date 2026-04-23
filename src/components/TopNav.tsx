@@ -67,7 +67,7 @@ export default function TopNav() {
                             <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                                 {bands[0].name[0].toUpperCase()}
                             </div>
-                            <span className="text-foreground font-medium">{bands[0].name}</span>
+                            <span className="text-foreground font-medium max-w-[8rem] sm:max-w-none truncate">{bands[0].name}</span>
                         </Link>
                     )}
 
@@ -80,7 +80,7 @@ export default function TopNav() {
                                 <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                                     {displayBand.name[0].toUpperCase()}
                                 </div>
-                                <span className="text-foreground font-medium">{displayBand.name}</span>
+                                <span className="text-foreground font-medium max-w-[8rem] sm:max-w-none truncate">{displayBand.name}</span>
                                 <ChevronDown className={cn("h-3 w-3 text-muted transition-transform duration-150", open && "rotate-180")} />
                             </button>
 

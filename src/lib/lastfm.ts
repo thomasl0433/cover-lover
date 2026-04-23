@@ -102,7 +102,7 @@ function trackToEnriched(t: LastFmTrack): EnrichedTrack {
             null,
         duration:
             parseInt(t.duration ?? "0", 10) > 0
-                ? Math.round(parseInt(t.duration!, 10) / 1000)
+                ? parseInt(t.duration!, 10)
                 : null,
         tags: [],
     };
@@ -185,7 +185,7 @@ export async function getTrackInfo(
         artist: t.artist?.name ?? artist,
         lastfmUrl: t.url,
         imageUrl: imageUrl || null,
-        duration: durationMs > 0 ? Math.round(durationMs / 1000) : null,
+        duration: durationMs > 0 ? durationMs : null,
         tags,
     };
 }

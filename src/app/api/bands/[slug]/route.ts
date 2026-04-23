@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
             songs: {
                 include: {
                     addedBy: { select: { id: true, displayName: true } },
-                    votes: { select: { memberId: true } },
+                    votes: { select: { memberId: true, member: { select: { displayName: true } } } },
                 },
                 orderBy: { addedAt: "desc" },
             },

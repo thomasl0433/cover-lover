@@ -15,7 +15,7 @@ interface Song {
     tags: string[];
     duration: number | null;
     addedBy: { id: string; displayName: string } | null;
-    votes: Array<{ memberId: string }>;
+    votes: Array<{ memberId: string; member?: { displayName: string } | null }>;
 }
 
 interface Props {
@@ -166,9 +166,21 @@ export default function SongCard({
                 </p>
             </div>
 
-            {/* Vote */}
+            {/* Vote + Delete column */}
             {!selectMode && (
                 <div className="flex flex-col items-center gap-1 shrink-0">
+                    {isOwner && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-600 hover:text-red-400"
+                            onClick={deleteSong}
+                            disabled={loadingDelete}
+                            title="Remove song"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                    )}
                     <Button
                         variant={hasVoted ? "success" : "outline"}
                         size="icon"
@@ -183,21 +195,35 @@ export default function SongCard({
                         <ThumbsUp className="h-4 w-4" />
                     </Button>
                     <span className="text-xs font-bold text-foreground">{voteCount}</span>
+                    {/* Voter initials */}
+                    {song.votes.length > 0 && (
+                        <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                            {song.votes.map((v) => {
+                                const name = v.member?.displayName ?? "?";
+                                const initials = name
+                                    .split(" ")
+                                    .map((w) => w[0])
+                                    .join("")
+                                    .slice(0, 2)
+                                    .toUpperCase();
+                                return (
+                                    <span
+                                        key={v.memberId}
+                                        title={name}
+                                        className={cn(
+                                            "h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white",
+                                            v.memberId === memberId
+                                                ? "bg-violet-500"
+                                                : "bg-slate-400 dark:bg-slate-600"
+                                        )}
+                                    >
+                                        {initials}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-            )}
-
-            {/* Delete (owner only, not in select mode) */}
-            {isOwner && !selectMode && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-slate-600 hover:text-red-400 absolute top-2 right-2"
-                    onClick={deleteSong}
-                    disabled={loadingDelete}
-                    title="Remove song"
-                >
-                    <Trash2 className="h-3.5 w-3.5" />
-                </Button>
             )}
         </div>
     );
