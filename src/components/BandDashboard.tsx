@@ -165,6 +165,7 @@ export default function BandDashboard({ slug }: Props) {
     }
 
     async function exportToSpotify() {
+        const isNewPlaylist = !band?.spotifyPlaylistId;
         setExportingSpotify(true);
         try {
             const res = await fetch("/api/spotify/export", {
@@ -174,7 +175,7 @@ export default function BandDashboard({ slug }: Props) {
             });
             if (!res.ok) throw new Error("Export failed");
             const { url } = await res.json();
-            setWasNewPlaylist(!band.spotifyPlaylistId);
+            setWasNewPlaylist(isNewPlaylist);
             setSpotifyPlaylistUrl(url);
             setShowSpotifyModal(true);
         } catch {
