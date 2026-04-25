@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Music2, User, LogIn } from "lucide-react";
@@ -22,13 +23,13 @@ export default function CreateBandForm() {
     if (!user) {
         return (
             <div className="flex flex-col items-center gap-4 text-center">
-                <p className="text-muted text-sm">Sign in to create your band</p>
-                <SignInButton mode="modal">
-                    <Button size="lg" className="w-full gap-2">
+                <p className="text-muted text-sm">Create your band in one step after signing in.</p>
+                <Button asChild size="lg" className="w-full gap-2">
+                    <Link href="/sign-in">
                         <LogIn className="h-4 w-4" />
-                        Sign in to get started
-                    </Button>
-                </SignInButton>
+                        Sign in
+                    </Link>
+                </Button>
             </div>
         );
     }

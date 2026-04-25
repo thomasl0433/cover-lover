@@ -102,6 +102,27 @@ const DEFAULT_THEME: SongColorTheme = {
     glow: "shadow-slate-200 dark:shadow-slate-900/40",
 };
 
+export const GENRE_PALETTE: Record<string, { label: string; bg: string; border: string; text: string; labelColor: string }> = {
+    metal:      { label: "Metal / Punk",        bg: "#fee2e2", border: "#ef4444", text: "#991b1b", labelColor: "#b91c1c" },
+    rock:       { label: "Rock",                bg: "#ffedd5", border: "#f97316", text: "#9a3412", labelColor: "#c2410c" },
+    folk:       { label: "Folk / Americana",    bg: "#dcfce7", border: "#22c55e", text: "#14532d", labelColor: "#15803d" },
+    pop:        { label: "Pop",                 bg: "#fce7f3", border: "#ec4899", text: "#831843", labelColor: "#be185d" },
+    electronic: { label: "Electronic",          bg: "#ede9fe", border: "#8b5cf6", text: "#4c1d95", labelColor: "#6d28d9" },
+    hiphop:     { label: "Hip-Hop / R&B",       bg: "#f3e8ff", border: "#a855f7", text: "#581c87", labelColor: "#7e22ce" },
+    blues:      { label: "Blues / Jazz",        bg: "#dbeafe", border: "#3b82f6", text: "#1e3a8a", labelColor: "#1d4ed8" },
+    country:    { label: "Country",             bg: "#fef3c7", border: "#f59e0b", text: "#78350f", labelColor: "#b45309" },
+    classical:  { label: "Ambient",             bg: "#cffafe", border: "#06b6d4", text: "#164e63", labelColor: "#0e7490" },
+    other:      { label: "Other",               bg: "#f1f5f9", border: "#94a3b8", text: "#334155", labelColor: "#475569" },
+};
+
+export function classifyGenre(tags: string[]): string {
+    const lower = tags.map(t => t.toLowerCase());
+    for (const rule of COLOR_RULES) {
+        if (rule.keywords.some(kw => lower.some(t => t.includes(kw)))) return rule.theme;
+    }
+    return "other";
+}
+
 export function getSongColorTheme(tags: string[]): SongColorTheme {
     const lower = tags.map((t) => t.toLowerCase());
     const energy = inferEnergy(lower);

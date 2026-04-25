@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ThumbsUp, Trash2, Clock, Check } from "lucide-react";
+import { ThumbsUp, Trash2, Clock, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSongColorTheme, formatDuration } from "@/lib/song-color";
@@ -11,6 +11,7 @@ interface Song {
     title: string;
     artist: string;
     lastfmUrl: string | null;
+    spotifyUri?: string | null;
     imageUrl: string | null;
     tags: string[];
     duration: number | null;
@@ -20,7 +21,7 @@ interface Song {
 
 interface Props {
     song: Song;
-    rank: number;
+    rank?: number;
     memberId: string;
     slug: string;
     onVoteChange: () => void;
@@ -48,6 +49,12 @@ export default function SongCard({
     const voteCount = song.votes.length;
     const isOwner = song.addedBy?.id === memberId;
     const theme = getSongColorTheme(song.tags as string[]);
+    const spotifyTrackId = song.spotifyUri?.startsWith("spotify:track:")
+        ? song.spotifyUri.replace("spotify:track:", "")
+        : null;
+    const spotifyUrl = spotifyTrackId
+        ? `https://open.spotify.com/track/${spotifyTrackId}`
+        : `https://open.spotify.com/search/${encodeURIComponent(`${song.title} ${song.artist}`)}`;
 
     async function toggleVote() {
         setLoadingVote(true);
@@ -73,7 +80,8 @@ export default function SongCard({
     return (
         <div
             className={cn(
-                "relative rounded-xl border p-4 flex gap-4 items-center transition-all duration-300 shadow-lg",
+                "relative rounded-xl border p-4 flex gap-4 transition-all duration-300 shadow-lg",
+                rank !== undefined ? "items-center" : "items-start",
                 selectMode
                     ? [
                         isOwner ? "cursor-pointer" : "opacity-60",
@@ -97,10 +105,12 @@ export default function SongCard({
                         </div>
                     )}
                 </div>
-            ) : (
+            ) : rank !== undefined ? (
                 <div className="text-2xl font-black text-black/10 dark:text-white/20 w-8 text-center shrink-0">
                     {rank}
                 </div>
+            ) : (
+                <div className="w-2 shrink-0" />
             )}
 
             {/* Album art */}
@@ -124,22 +134,23 @@ export default function SongCard({
             {/* Info */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2 flex-wrap">
-                    <p className="text-foreground font-semibold leading-tight truncate">
+                    <p className={cn("text-foreground font-semibold leading-tight", rank !== undefined && "truncate")}>
                         {song.title}
                     </p>
-                    {song.lastfmUrl && (
-                        <a
-                            href={song.lastfmUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => selectMode && e.preventDefault()}
-                            className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-500/20 transition-colors shrink-0 mt-0.5"
-                        >
-                            last.fm
-                        </a>
-                    )}
                 </div>
-                <p className={cn("text-sm truncate", theme.text)}>{song.artist}</p>
+                <p className={cn("text-sm", rank !== undefined && "truncate", theme.text)}>{song.artist}</p>
+                {!selectMode && (
+                    <a
+                        href={spotifyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-muted mt-0.5 hover:text-green-500 transition-colors"
+                        title="Open on Spotify"
+                    >
+                        Open in Spotify
+                        <ExternalLink className="h-3 w-3" />
+                    </a>
+                )}
 
                 <div className="flex flex-wrap gap-1.5 mt-2">
                     {(song.tags as string[]).slice(0, 4).map((tag) => (
